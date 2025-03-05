@@ -4,6 +4,7 @@ import asyncio
 import functools
 import os
 import struct
+import logging
 import sys
 from typing import Optional
 from message_codec import MessageCodec
@@ -17,10 +18,12 @@ HDHOMERUN_DISCOVER_UDP_PORT=65001
 # It could be anything as long as the 2 proxies use the same port.
 TCP_PORT = HDHOMERUN_DISCOVER_UDP_PORT
 
-DEBUG = 'DEBUG' in os.environ
+DEBUG = True
 
-def log(str: str):
-    print(str, file=sys.stderr)
+logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
+
+def log(message: str):
+    logging.debug(message)
 
 # Proxy that acts like an app. Runs on the same network as the
 # tuner and communicates with the tuner proxy running on the

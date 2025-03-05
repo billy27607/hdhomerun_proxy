@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  hdhomerun_proxy:
+    image: hdhomerun_proxy
+    container_name: hdhomerun_app_proxy
+    restart: on-failure
+    ports:
+      - "65001:65001"
