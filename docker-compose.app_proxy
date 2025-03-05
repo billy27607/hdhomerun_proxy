@@ -7,3 +7,7 @@ services:
     restart: on-failure
     ports:
       - "65001:65001"
+    environment:
+      - DEBUG=True
+      - TUNER_PROXY_IP=192.168.100.25
+    command: ["python", "hdhomerun_app_proxy.py", "$${TUNER_PROXY_IP}"]
