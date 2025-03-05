@@ -10,5 +10,5 @@ services:
     environment:
       - TUNER_PROXY_IP=192.168.100.25
       - DEBUG = True
-    command: ["python", "hdhomerun_tuner_proxy.py", "$${TUNER_PROXY_IP}"]
+    command: ["python", "hdhomerun_tuner_proxy.py", "${TUNER_PROXY_IP}"]
     
