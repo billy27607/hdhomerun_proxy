@@ -26,8 +26,7 @@ def log(str: str):
 # tuner and communicates with the tuner proxy running on the
 # app's network.
 class AppProxy:
-    tcp_transport : Optional[asyncio.Transport] = None
-    codec = MessageCodec()
+    active_connections: set = set()
 
     # A protocol object that manages a UDP socket for a single query that communicates
     # with the tuner. Each query may result is multiple reponses - each tuner can
@@ -71,24 +70,24 @@ class AppProxy:
 
     # A protocol object that manages a TCP connection from a tuner proxy.
     class TcpServerProtocol(asyncio.Protocol):
+        def __init__(self):
+            self.codec = MessageCodec()
+
         def connection_made(self, transport: asyncio.Transport):
-            AppProxy.tcp_transport = transport
-            peername = transport.get_extra_info('peername')
-            log(f'Tuner proxy at {peername[0]}:{peername[1]} connected')
             self.transport = transport
+            self.peername = transport.get_extra_info('peername')
+            AppProxy.active_connections.add(self)
+            log(f'Tuner proxy at {self.peername[0]}:{self.peername[1]} connected ({len(AppProxy.active_connections)} active)')
 
         def connection_lost(self, exc):
-            if DEBUG:
-                if exc:
-                    log(f'Tuner proxy at {peername[0]}:{peername[1]} disconnected due to {exc}')
-                else:
-                    log(f'Tuner proxy at {peername[0]}:{peername[1]} disconnected')
+            AppProxy.active_connections.discard(self)
+            log(f'Tuner proxy at {self.peername[0]}:{self.peername[1]} disconnected ({len(AppProxy.active_connections)} active)')
 
         # Protocol implementation.
         def data_received(self, data):
             log(f'Request received: {len(data)} bytes from tuner proxy')
             # Convert the stream data into a message.
-            AppProxy.codec.decode(data, self.on_received_message)
+            self.codec.decode(data, self.on_received_message)
 
         # Handle a message that has been received from the client.
         def on_received_message(self, msg):
@@ -109,7 +108,7 @@ class AppProxy:
                                 reply_data)
 
             # Send back to the tuner proxy.
-            self.transport.write(AppProxy.codec.encode(reply))
+            self.transport.write(self.codec.encode(reply))
 
     async def run_async(app_proxy_host):
         loop = asyncio.get_running_loop()

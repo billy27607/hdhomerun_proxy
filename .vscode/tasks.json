@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: Build hdhomerun_proxy",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "buildx",
+        "build",
+        "--platform",
+        "linux/amd64,linux/arm64",
+        "-t",
+        "ghcr.io/billy27607/hdhomerun_proxy:latest",
+        "."
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Push hdhomerun_proxy",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "push",
+        "ghcr.io/billy27607/hdhomerun_proxy:latest"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Build and Push hdhomerun_proxy",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "buildx",
+        "build",
+        "--platform",
+        "linux/amd64,linux/arm64",
+        "-t",
+        "ghcr.io/billy27607/hdhomerun_proxy:latest",
+        ".",
+        "--push"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Login to GitHub Container Registry",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "login",
+        "ghcr.io",
+        "-u",
+        "billy27607"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

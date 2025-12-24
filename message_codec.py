@@ -215,8 +215,7 @@ class TunerProxy:
 # tuner and communicates with the tuner proxy running on the
 # app's network.
 class AppProxy:
-    tcp_transport : Optional[asyncio.Transport] = None
-    codec = MessageCodec()
+    active_connections: set = set()
 
     # A protocol object that manages a UDP socket for a single query that communicates
     # with the tuner. Each query may result is multiple reponses - each tuner can
@@ -259,16 +258,23 @@ class AppProxy:
         
     # A protocol object that manages a TCP connection from a tuner proxy.
     class TcpServerProtocol(asyncio.Protocol):
+        def __init__(self):
+            self.codec = MessageCodec()
+
         def connection_made(self, transport: asyncio.Transport):
-                AppProxy.tcp_transport = transport
-                peername = transport.get_extra_info('peername')
-                log(f'Tuner proxy at {peername[0]}:{peername[1]} connected')
-                self.transport = transport
+            self.transport = transport
+            self.peername = transport.get_extra_info('peername')
+            AppProxy.active_connections.add(self)
+            log(f'Tuner proxy at {self.peername[0]}:{self.peername[1]} connected ({len(AppProxy.active_connections)} active)')
+
+        def connection_lost(self, exc):
+            AppProxy.active_connections.discard(self)
+            log(f'Tuner proxy at {self.peername[0]}:{self.peername[1]} disconnected ({len(AppProxy.active_connections)} active)')
 
         # Protocol implementation.
         def data_received(self, data):
             # Convert the stream data into a message.
-            AppProxy.codec.decode(data, self.on_received_message)
+            self.codec.decode(data, self.on_received_message)
 
         # Handle a message that has been received from the client.
         def on_received_message(self, msg):
@@ -283,13 +289,13 @@ class AppProxy:
 
         def reply(self, source_addr : bytes, source_port, reply_data):
             # Pack up the data.
-            reply = struct.pack(f'!4sH{len(reply_data)}s', 
+            reply = struct.pack(f'!4sH{len(reply_data)}s',
                                 source_addr,
                                 source_port,
                                 reply_data)
-            
+
             # Send back to the tuner proxy.
-            self.transport.write(AppProxy.codec.encode(reply))
+            self.transport.write(self.codec.encode(reply))
             
     async def run_async(app_proxy_host):
         loop = asyncio.get_running_loop()
